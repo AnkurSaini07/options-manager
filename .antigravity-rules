@@ -1,0 +1,51 @@
+# Upstox Developer Integration Rules
+
+This file defines the project-specific rules, guidelines, and constraints for all development activities in this repository. The Antigravity agent must strictly adhere to these rules at all times.
+
+---
+
+## 1. Zero Third-Party Application Dependencies
+* **Rule:** Do NOT add, install, or import any third-party npm packages (e.g., `axios`, `express`, `dotenv`, `lodash`, `ws`, `commander`, etc.) to the project dependencies.
+* **Exceptions:** Only standard utility devDependencies already configured (such as `@biomejs/biome`, `typescript`, `@types/bun`) and explicitly requested frameworks (such as `@modelcontextprotocol/sdk` and `zod`) are permitted.
+* **Rationale:** Keeping the project lightweight, secure, and relying fully on the robust, highly-optimized runtime features provided natively by Bun.
+
+---
+
+## 2. Mandatory Use of Bun Native APIs
+Always use Bun's built-in APIs instead of Node.js legacy modules or external packages:
+* **HTTP Server:** Use `Bun.serve({ port, fetch })` rather than Express, Koa, or Node's `http` module.
+* **HTTP Client:** Use native `fetch` (fully supported by Bun) instead of `axios`, `got`, or `request`.
+* **File Operations:** Use `Bun.file(path)` and `Bun.write(path, data)` for highly performant file operations instead of `fs` or `fs/promises`.
+* **Environment Variables:** Use native `process.env` (Bun automatically loads `.env` files natively; there is zero need for `dotenv`).
+* **WebSockets:** Use Bun's built-in high-performance WebSocket support via `Bun.serve` rather than `ws` or similar libraries.
+* **Process Spawning:** Use `Bun.spawn` and `Bun.spawnSync` instead of Node's `child_process` module.
+* **Hashing / Crypto:** Use `Bun.SHA256`, `Bun.password`, or standard Web Crypto APIs.
+* **Command Line Arguments:** Use `Bun.argv` to parse command-line arguments.
+
+---
+
+## 3. High Code Modularity & Directory Layout
+* **Rule 1 (Always make modular code):** All code written in the repository must follow modular design principles, keeping components/functions small and focused on a single responsibility.
+* **Rule 2 (Divide the large files into small logical files):** Never write large or monolithic files. If a file grows or has multiple concerns, it must be split up into separate logical, granular files (ideally under 100-200 lines).
+* **Rule 3 (Create directories to separate code):** Separate concerns cleanly by organizing and placing code into the following designated directories:
+  - `constants/`: Global immutable constants, error messages, and configuration keys.
+  - `configs/`: Environment configuration, port mappings, and initial setup.
+  - `utils/`: Reusable, pure helper utilities and logic.
+  - `helpers/`: Data formatters, validators, and request/response mappers.
+  - `clients/`: External or internal API clients (e.g. Upstox client).
+  - `tools/`: MCP tools, schemas, and direct tool handlers.
+  - `services/`: Core business logic, orchestration, and server initialization.
+
+---
+
+## 4. Formatting & Linting
+* Always use Biome (`bunx --bun @biomejs/biome check --write`) to format and lint the codebase.
+* Adhere strictly to clean TypeScript code.
+* **Strict Rule:** Do NOT use the `any` type anywhere in the codebase. Always use specific types or `unknown`.
+* **Strict Rule:** Do NOT use Biome suppression comments (e.g. `// biome-ignore ...`) to bypass linter rules. Always fix the underlying code issues instead of ignoring them.
+
+---
+
+## 5. Official SDK Design Patterns & Reference
+* **Rule:** Always take design and implementation inspiration directly from the official Model Context Protocol TypeScript SDK repository (https://github.com/modelcontextprotocol/typescript-sdk).
+* **High-Level McpServer API:** Prefer using the high-level `McpServer` class and standard Zod schemas for automatic JSON-Schema generation and dynamic parameter validation. Do NOT use `zod-to-json-schema` or write manual request dispatchers unless absolutely necessary.

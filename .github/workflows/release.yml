@@ -1,0 +1,75 @@
+name: Release Options Manager MCP
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags (e.g. v1.0.0, v1.2.0)
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run Biome Linter Verification
+        run: bun run lint
+
+      - name: Run Build (Compile Production Bundle)
+        run: bun run build
+
+      - name: Compress Release Assets
+        run: |
+          mkdir -p build-assets
+          cp dist/index.js build-assets/options-manager.js
+          cd build-assets
+          zip -r ../options-manager.zip .
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            options-manager.zip
+            dist/index.js
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Options Analytics MCP Server Release `${{ github.ref_name }}`
+            
+            This release bundles the entire options analytics workstation into a single optimized executable file.
+            
+            ### Exposed Tools
+            * `search_underlying` - Search NSE/BSE symbols
+            * `get_active_expiries` - Get options expiry dates
+            * `get_options_insight` - Quantitative Option Chain PCR, Max Pain & support/resistance
+            * `get_analyzed_option_chain` - Spot-centered moneyness filtered option chain
+            * `get_oi_dynamics` - Strike-wise OI changes and writing indicators
+            * `get_volatility_profile` - ATM IV and out-of-the-money IV skew metrics
+            * `get_technical_indicator_candles` - SMA, EMA, RSI, Bollinger Bands, ATR, and MACD indicators
+            
+            ### Included Assets
+            * `options-manager.js`: Standalone production JS bundle.
+            * `options-manager.zip`: Compressed release bundle.
+            
+            ### Setup
+            Run the server with Bun:
+            ```bash
+            bun run options-manager.js
+            ```
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
