@@ -142,7 +142,7 @@ server.registerTool(
 	"get_options_insight",
 	{
 		description:
-			"Master options-chain fusion tool. Fetches option chain and news, then calculates Active OI support/resistance levels, Put-Call Ratio (PCR) bias, Max Pain, and yields structured trade recommendations.",
+			"Master options-chain fusion tool. Fetches option chain and calculates Active OI support/resistance levels, Put-Call Ratio (PCR) bias, Max Pain, and yields structured trade recommendations.",
 		inputSchema: z.object({
 			instrument_key: z
 				.string()
@@ -316,6 +316,9 @@ server.registerTool(
 							volume: e.call_options.market_data?.volume || 0,
 							iv: e.call_options.option_greeks?.implied_volatility || 0,
 							delta: e.call_options.option_greeks?.delta || 0,
+							gamma: e.call_options.option_greeks?.gamma || 0,
+							theta: e.call_options.option_greeks?.theta || 0,
+							vega: e.call_options.option_greeks?.vega || 0,
 						}
 					: null,
 				put: e.put_options
@@ -326,6 +329,9 @@ server.registerTool(
 							volume: e.put_options.market_data?.volume || 0,
 							iv: e.put_options.option_greeks?.implied_volatility || 0,
 							delta: e.put_options.option_greeks?.delta || 0,
+							gamma: e.put_options.option_greeks?.gamma || 0,
+							theta: e.put_options.option_greeks?.theta || 0,
+							vega: e.put_options.option_greeks?.vega || 0,
 						}
 					: null,
 			}));
@@ -460,7 +466,7 @@ server.registerTool(
 	"get_technical_indicator_candles",
 	{
 		description:
-			"Fetch intraday or historical candle chart data for an instrument and calculate Moving Averages (20 SMA, 50 SMA) and Relative Strength Index (RSI).",
+			"Fetch intraday or historical candle chart data for an instrument and calculate SMA (20/50/200), EMA (9/20), RSI (14), MACD (12/26/9), Bollinger Bands (20,2σ), ATR (14), and an overall trend rating (STRONG_BULLISH → STRONG_BEARISH).",
 		inputSchema: z.object({
 			instrument_key: z
 				.string()

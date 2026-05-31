@@ -8,6 +8,8 @@ const logger = createLogger("mcp-server");
 // Import tool files to trigger their registration on the McpServer instance
 // --------------------------------------------------------------------------
 import "./tools/market.ts";
+import "./tools/scenario.ts";
+import "./tools/strategy.ts";
 
 // --------------------------------------------------------------------------
 // Main Server Transport Bootstrapper
