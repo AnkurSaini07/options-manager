@@ -10,6 +10,7 @@ const logger = createLogger("mcp-server");
 import "./tools/market.ts";
 import "./tools/scenario.ts";
 import "./tools/strategy.ts";
+import "./tools/signal.ts";
 
 // --------------------------------------------------------------------------
 // Main Server Transport Bootstrapper
