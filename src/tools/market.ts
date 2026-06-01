@@ -3,6 +3,7 @@ import { type UpstoxResponse, upstoxFetch } from "../clients/upstox.ts";
 import {
 	analyzeActiveOI,
 	analyzeOIDynamics,
+	type ChangeOIData,
 	calculateMaxPain,
 	calculatePCR,
 	calculateTechnicalIndicators,
@@ -10,7 +11,6 @@ import {
 	generateRecommendation,
 	type OptionChainResponse,
 	type RawCandleArray,
-	type RawChangeOIEntry,
 } from "../helpers/analysis.ts";
 import { server } from "../server.ts";
 
@@ -24,6 +24,16 @@ export interface InstrumentSearchItem {
 	instrument_type?: string;
 	expiry?: string;
 }
+
+// Upstox FO trading symbols don't match index display names.
+// e.g. "NSE_INDEX|Nifty Bank" → FO symbol "BANKNIFTY", not "Nifty Bank".
+const FO_SYMBOL_BY_INSTRUMENT: Record<string, string> = {
+	"NSE_INDEX|Nifty 50": "NIFTY",
+	"NSE_INDEX|Nifty Bank": "BANKNIFTY",
+	"NSE_INDEX|Nifty Financial Services": "FINNIFTY",
+	"NSE_INDEX|NIFTY MID SELECT": "MIDCPNIFTY",
+	"NSE_INDEX|NIFTY Next 50": "NIFTYNXT50",
+};
 
 // --------------------------------------------------------------------------
 // Tool: search_underlying
@@ -82,9 +92,11 @@ server.registerTool(
 	},
 	async (args) => {
 		try {
-			const searchQuery = args.instrument_key.includes("|")
-				? args.instrument_key.split("|")[1]
-				: args.instrument_key;
+			const searchQuery =
+				FO_SYMBOL_BY_INSTRUMENT[args.instrument_key] ??
+				(args.instrument_key.includes("|")
+					? args.instrument_key.split("|")[1]
+					: args.instrument_key);
 
 			if (!searchQuery) {
 				throw new Error("Invalid underlying instrument key format.");
@@ -390,7 +402,7 @@ server.registerTool(
 	},
 	async (args) => {
 		try {
-			const response = await upstoxFetch<UpstoxResponse<RawChangeOIEntry[]>>(
+			const response = await upstoxFetch<UpstoxResponse<ChangeOIData>>(
 				"/v2/market/change-oi",
 				"GET",
 				{
@@ -400,7 +412,7 @@ server.registerTool(
 					interval: args.interval,
 				},
 			);
-			const entries = response.data || [];
+			const entries = response.data?.call_put_oi_data_list ?? [];
 			const dynamics = analyzeOIDynamics(entries);
 			return {
 				content: [{ type: "text", text: JSON.stringify(dynamics, null, 2) }],

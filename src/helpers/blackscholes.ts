@@ -101,6 +101,48 @@ export function daysToExpiry(expiryDate: string): number {
 }
 
 /**
+ * Invert Black-Scholes to find implied volatility from a market price.
+ * Uses Newton-Raphson iteration. Returns IV as a percentage (e.g. 15.0 for 15%),
+ * matching the format Upstox returns for option_greeks.implied_volatility.
+ * Returns null when the inversion does not converge (deep ITM/OTM, near-expiry).
+ */
+export function calculateImpliedVolatility(
+	marketPrice: number,
+	spot: number,
+	strike: number,
+	tte: number,
+	isCall: boolean,
+	riskFreeRate = 0.065,
+): number | null {
+	if (tte <= 0 || marketPrice <= 0 || spot <= 0 || strike <= 0) return null;
+
+	// Brenner-Subrahmanyam approximation for initial guess
+	const guess = Math.sqrt((2 * Math.PI) / tte) * (marketPrice / spot);
+	let iv = Math.max(0.05, Math.min(guess, 3.0));
+
+	const MAX_ITER = 100;
+	const TOLERANCE = 1e-5;
+
+	for (let i = 0; i < MAX_ITER; i++) {
+		const bs = blackScholes(spot, strike, tte, iv, riskFreeRate);
+		if (!bs) return null;
+
+		const price = isCall ? bs.callPrice : bs.putPrice;
+		const diff = price - marketPrice;
+		if (Math.abs(diff) < TOLERANCE) return Number((iv * 100).toFixed(4));
+
+		// bs.vega is price change per 1% IV — multiply by 100 for per-unit-decimal vega
+		const vegaPerUnit = bs.vega * 100;
+		if (vegaPerUnit < 1e-10) return null;
+
+		iv = iv - diff / vegaPerUnit;
+		if (iv <= 0 || iv > 5.0) return null;
+	}
+
+	return null;
+}
+
+/**
  * Build a scenario table of BS prices and Greeks across a spot range.
  * @param strike      Strike price to evaluate
  * @param expiryDate  Expiry date string YYYY-MM-DD

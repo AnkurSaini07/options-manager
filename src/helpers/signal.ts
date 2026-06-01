@@ -1,5 +1,6 @@
 import { SIGNAL_CONFIG } from "../configs/signal-config.ts";
 import type { OptionChainEntry } from "./analysis.ts";
+import { calculateImpliedVolatility, daysToExpiry } from "./blackscholes.ts";
 
 // --------------------------------------------------------------------------
 // Input / Output types
@@ -346,10 +347,13 @@ export function selectOptimalStrike(
 	entries: OptionChainEntry[],
 	direction: "BULLISH" | "BEARISH",
 	atmIV: number,
+	expiryDate: string,
 ): StrikeSelection | null {
 	const cfg = SIGNAL_CONFIG;
 	const isCall = direction === "BULLISH";
 	const ivCap = atmIV > 0 ? atmIV * 1.2 : Number.POSITIVE_INFINITY;
+	const spotPrice = entries[0]?.underlying_spot_price ?? 0;
+	const tte = daysToExpiry(expiryDate) / 365;
 
 	interface Candidate {
 		strike: number;
@@ -370,7 +374,17 @@ export function selectOptimalStrike(
 		const ltp = option.market_data?.ltp ?? 0;
 		const oi = option.market_data?.oi ?? 0;
 		const volume = option.market_data?.volume ?? 0;
-		const iv = option.option_greeks?.implied_volatility ?? 0;
+		const chainIV = option.option_greeks?.implied_volatility ?? 0;
+		const iv =
+			chainIV > 0
+				? chainIV
+				: (calculateImpliedVolatility(
+						ltp,
+						spotPrice,
+						entry.strike_price,
+						tte,
+						isCall,
+					) ?? 0);
 		const rawDelta = option.option_greeks?.delta ?? 0;
 		// Put deltas are negative — use absolute value for range check
 		const delta = Math.abs(rawDelta);
@@ -411,7 +425,6 @@ export function selectOptimalStrike(
 	}
 
 	// Fallback: relax OI threshold, find closest to ATM
-	const spotPrice = entries[0]?.underlying_spot_price ?? 0;
 	let atmFallback: Candidate | null = null;
 	let minDist = Number.POSITIVE_INFINITY;
 
@@ -425,12 +438,24 @@ export function selectOptimalStrike(
 		const dist = Math.abs(entry.strike_price - spotPrice);
 		if (dist < minDist) {
 			minDist = dist;
+			const fbLtp = option.market_data?.ltp ?? 0;
+			const fbChainIV = option.option_greeks?.implied_volatility ?? 0;
+			const fbIV =
+				fbChainIV > 0
+					? fbChainIV
+					: (calculateImpliedVolatility(
+							fbLtp,
+							spotPrice,
+							entry.strike_price,
+							tte,
+							isCall,
+						) ?? 0);
 			atmFallback = {
 				strike: entry.strike_price,
 				instrumentKey: option.instrument_key,
-				ltp: option.market_data?.ltp ?? 0,
+				ltp: fbLtp,
 				delta: Math.abs(option.option_greeks?.delta ?? 0),
-				iv: option.option_greeks?.implied_volatility ?? 0,
+				iv: fbIV,
 				oi,
 				volume: option.market_data?.volume ?? 0,
 			};

@@ -4,6 +4,7 @@ import { SIGNAL_CONFIG } from "../configs/signal-config.ts";
 import {
 	analyzeActiveOI,
 	analyzeOIDynamics,
+	type ChangeOIData,
 	calculateMaxPain,
 	calculatePCR,
 	calculateTechnicalIndicators,
@@ -11,7 +12,6 @@ import {
 	generateRecommendation,
 	type OptionChainResponse,
 	type RawCandleArray,
-	type RawChangeOIEntry,
 } from "../helpers/analysis.ts";
 import { buildGreeksScenario, daysToExpiry } from "../helpers/blackscholes.ts";
 import { evaluateSignalGates, selectOptimalStrike } from "../helpers/signal.ts";
@@ -71,7 +71,7 @@ server.registerTool(
 						instrument_key,
 						expiry_date,
 					}),
-					upstoxFetch<UpstoxResponse<RawChangeOIEntry[]>>(
+					upstoxFetch<UpstoxResponse<ChangeOIData>>(
 						"/v2/market/change-oi",
 						"GET",
 						{
@@ -126,7 +126,9 @@ server.registerTool(
 				maxPain,
 			);
 
-			const oiDynamicsRaw = analyzeOIDynamics(changeOiResponse.data ?? []);
+			const changeOiEntries =
+				changeOiResponse.data?.call_put_oi_data_list ?? [];
+			const oiDynamicsRaw = analyzeOIDynamics(changeOiEntries);
 			const candles = candleResponse.data?.candles ?? [];
 			const technicals = calculateTechnicalIndicators(candles);
 
@@ -249,6 +251,7 @@ server.registerTool(
 				chainEntries,
 				gates.direction as "BULLISH" | "BEARISH",
 				atmIV,
+				expiry_date,
 			);
 
 			if (!strikeSelection) {

@@ -1,4 +1,5 @@
 import { ATR, BollingerBands, EMA, MACD, RSI, SMA } from "technicalindicators";
+import { calculateImpliedVolatility, daysToExpiry } from "./blackscholes.ts";
 
 export interface OptionMarketData {
 	ltp?: number;
@@ -43,6 +44,11 @@ export interface RawChangeOIEntry {
 	call_change_oi?: number;
 	put_oi?: number;
 	put_change_oi?: number;
+}
+
+// Actual shape returned by Upstox /v2/market/change-oi
+export interface ChangeOIData {
+	call_put_oi_data_list: RawChangeOIEntry[];
 }
 
 export type RawCandleArray = [
@@ -383,10 +389,31 @@ export function calculateVolatilityProfile(entries: OptionChainEntry[]) {
 	}
 
 	const atmEntry = sorted[closestIdx];
-	const atmCallIV =
-		atmEntry?.call_options?.option_greeks?.implied_volatility || 0;
-	const atmPutIV =
-		atmEntry?.put_options?.option_greeks?.implied_volatility || 0;
+	const tte = daysToExpiry(atmEntry?.expiry ?? "") / 365;
+
+	const resolveIV = (
+		rawIV: number | undefined,
+		ltp: number | undefined,
+		strike: number,
+		isCall: boolean,
+	): number => {
+		if (rawIV && rawIV > 0) return rawIV;
+		if (!ltp || ltp <= 0) return 0;
+		return calculateImpliedVolatility(ltp, spotPrice, strike, tte, isCall) ?? 0;
+	};
+
+	const atmCallIV = resolveIV(
+		atmEntry?.call_options?.option_greeks?.implied_volatility,
+		atmEntry?.call_options?.market_data?.ltp,
+		atmEntry?.strike_price ?? 0,
+		true,
+	);
+	const atmPutIV = resolveIV(
+		atmEntry?.put_options?.option_greeks?.implied_volatility,
+		atmEntry?.put_options?.market_data?.ltp,
+		atmEntry?.strike_price ?? 0,
+		false,
+	);
 	const atmIV = Number(((atmCallIV + atmPutIV) / 2).toFixed(2));
 
 	// Calculate IV Skew: Equidistant out-of-the-money options (e.g. 3 strikes OTM)
@@ -396,10 +423,18 @@ export function calculateVolatilityProfile(entries: OptionChainEntry[]) {
 	const callOtmEntry = sorted[callOtmIdx];
 	const putOtmEntry = sorted[putOtmIdx];
 
-	const otmCallIV =
-		callOtmEntry?.call_options?.option_greeks?.implied_volatility || 0;
-	const otmPutIV =
-		putOtmEntry?.put_options?.option_greeks?.implied_volatility || 0;
+	const otmCallIV = resolveIV(
+		callOtmEntry?.call_options?.option_greeks?.implied_volatility,
+		callOtmEntry?.call_options?.market_data?.ltp,
+		callOtmEntry?.strike_price ?? 0,
+		true,
+	);
+	const otmPutIV = resolveIV(
+		putOtmEntry?.put_options?.option_greeks?.implied_volatility,
+		putOtmEntry?.put_options?.market_data?.ltp,
+		putOtmEntry?.strike_price ?? 0,
+		false,
+	);
 
 	// Skew = Put IV - Call IV
 	const skew = Number((otmPutIV - otmCallIV).toFixed(2));
