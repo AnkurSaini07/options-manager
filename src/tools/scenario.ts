@@ -61,8 +61,8 @@ server.registerTool(
 			const targetEntry = entries.find((e) => e.strike_price === args.strike);
 			const rawIV =
 				args.option_type === "call"
-					? targetEntry?.call_options?.option_greeks?.implied_volatility
-					: targetEntry?.put_options?.option_greeks?.implied_volatility;
+					? targetEntry?.call_options?.option_greeks?.iv
+					: targetEntry?.put_options?.option_greeks?.iv;
 
 			let ivPct = rawIV || 0;
 			if (!ivPct) {
@@ -75,8 +75,8 @@ server.registerTool(
 						? cur
 						: prev,
 				);
-				const cIV = atm?.call_options?.option_greeks?.implied_volatility || 0;
-				const pIV = atm?.put_options?.option_greeks?.implied_volatility || 0;
+				const cIV = atm?.call_options?.option_greeks?.iv || 0;
+				const pIV = atm?.put_options?.option_greeks?.iv || 0;
 				ivPct = (cIV + pIV) / 2;
 			}
 

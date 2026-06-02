@@ -543,7 +543,7 @@ async function runTests() {
 			call: e.call_options
 				? {
 						ltp: e.call_options.market_data?.ltp ?? 0,
-						iv: e.call_options.option_greeks?.implied_volatility ?? 0,
+						iv: e.call_options.option_greeks?.iv ?? 0,
 						delta: e.call_options.option_greeks?.delta ?? 0,
 						gamma: e.call_options.option_greeks?.gamma ?? 0,
 						theta: e.call_options.option_greeks?.theta ?? 0,
@@ -553,7 +553,7 @@ async function runTests() {
 			put: e.put_options
 				? {
 						ltp: e.put_options.market_data?.ltp ?? 0,
-						iv: e.put_options.option_greeks?.implied_volatility ?? 0,
+						iv: e.put_options.option_greeks?.iv ?? 0,
 						delta: e.put_options.option_greeks?.delta ?? 0,
 						gamma: e.put_options.option_greeks?.gamma ?? 0,
 						theta: e.put_options.option_greeks?.theta ?? 0,
@@ -666,7 +666,7 @@ async function runTests() {
 
 		// Prefer chain IV; fall back to BS-inverted IV from LTP (mirrors resolveIV in analysis.ts)
 		const chainIV =
-			atmEntry.call_options?.option_greeks?.implied_volatility ?? 0;
+			atmEntry.call_options?.option_greeks?.iv ?? 0;
 		const ltp = atmEntry.call_options?.market_data?.ltp ?? 0;
 		const resolvedIVPct =
 			chainIV > 0
@@ -707,12 +707,12 @@ async function runTests() {
 				"Call delta is not monotonically increasing across spot range.",
 			);
 
-		// Gamma and vega should be positive
-		const allPositiveGamma = scenario.every((s) => s.gamma > 0);
-		const allPositiveVega = scenario.every((s) => s.vega > 0);
+		// Gamma and vega should be non-negative (far-OTM near-expiry can round to 0)
+		const allPositiveGamma = scenario.every((s) => s.gamma >= 0);
+		const allPositiveVega = scenario.every((s) => s.vega >= 0);
 		if (!allPositiveGamma)
-			throw new Error("Gamma contains non-positive values.");
-		if (!allPositiveVega) throw new Error("Vega contains non-positive values.");
+			throw new Error("Gamma contains negative values.");
+		if (!allPositiveVega) throw new Error("Vega contains negative values.");
 
 		// Call theta is always ≤ 0 in BS (strict invariant — no interest-rate flip exists for calls)
 		for (const s of scenario) {

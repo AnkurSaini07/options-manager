@@ -15,7 +15,7 @@ export interface OptionGreeks {
 	gamma?: number;
 	theta?: number;
 	vega?: number;
-	implied_volatility?: number;
+	iv?: number;
 }
 
 export interface OptionDetail {
@@ -403,13 +403,13 @@ export function calculateVolatilityProfile(entries: OptionChainEntry[]) {
 	};
 
 	const atmCallIV = resolveIV(
-		atmEntry?.call_options?.option_greeks?.implied_volatility,
+		atmEntry?.call_options?.option_greeks?.iv,
 		atmEntry?.call_options?.market_data?.ltp,
 		atmEntry?.strike_price ?? 0,
 		true,
 	);
 	const atmPutIV = resolveIV(
-		atmEntry?.put_options?.option_greeks?.implied_volatility,
+		atmEntry?.put_options?.option_greeks?.iv,
 		atmEntry?.put_options?.market_data?.ltp,
 		atmEntry?.strike_price ?? 0,
 		false,
@@ -424,13 +424,13 @@ export function calculateVolatilityProfile(entries: OptionChainEntry[]) {
 	const putOtmEntry = sorted[putOtmIdx];
 
 	const otmCallIV = resolveIV(
-		callOtmEntry?.call_options?.option_greeks?.implied_volatility,
+		callOtmEntry?.call_options?.option_greeks?.iv,
 		callOtmEntry?.call_options?.market_data?.ltp,
 		callOtmEntry?.strike_price ?? 0,
 		true,
 	);
 	const otmPutIV = resolveIV(
-		putOtmEntry?.put_options?.option_greeks?.implied_volatility,
+		putOtmEntry?.put_options?.option_greeks?.iv,
 		putOtmEntry?.put_options?.market_data?.ltp,
 		putOtmEntry?.strike_price ?? 0,
 		false,

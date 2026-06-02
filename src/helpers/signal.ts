@@ -374,7 +374,7 @@ export function selectOptimalStrike(
 		const ltp = option.market_data?.ltp ?? 0;
 		const oi = option.market_data?.oi ?? 0;
 		const volume = option.market_data?.volume ?? 0;
-		const chainIV = option.option_greeks?.implied_volatility ?? 0;
+		const chainIV = option.option_greeks?.iv ?? 0;
 		const iv =
 			chainIV > 0
 				? chainIV
@@ -439,7 +439,7 @@ export function selectOptimalStrike(
 		if (dist < minDist) {
 			minDist = dist;
 			const fbLtp = option.market_data?.ltp ?? 0;
-			const fbChainIV = option.option_greeks?.implied_volatility ?? 0;
+			const fbChainIV = option.option_greeks?.iv ?? 0;
 			const fbIV =
 				fbChainIV > 0
 					? fbChainIV

@@ -85,19 +85,25 @@ export function blackScholes(
 		putPrice: Number(putPrice.toFixed(2)),
 		callDelta: Number(Nd1.toFixed(4)),
 		putDelta: Number((Nd1 - 1).toFixed(4)),
-		gamma: Number((nd1 / (spot * annualIV * sqrtT)).toFixed(6)),
+		gamma: Number((nd1 / (spot * annualIV * sqrtT)).toFixed(8)),
 		callTheta: Number(callTheta.toFixed(4)),
 		putTheta: Number(putTheta.toFixed(4)),
 		vega: Number(vega.toFixed(4)),
 	};
 }
 
-/** Calendar days from today to expiry date, floored to 0. */
+/**
+ * Days (fractional) from now to expiry, using 15:30 IST as the expiry cutoff.
+ * Returns at least a minimum of 1/1440 day (~1 minute) so BS doesn't receive tte=0.
+ */
 export function daysToExpiry(expiryDate: string): number {
-	const expiry = new Date(expiryDate);
-	const now = new Date();
-	const diffMs = expiry.getTime() - now.getTime();
-	return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+	// Expiry settles at 15:30 IST = UTC+05:30 → 10:00 UTC
+	const [year, month, day] = expiryDate.split("-").map(Number);
+	const expiryUtc = Date.UTC(year!, month! - 1, day!, 10, 0, 0); // 10:00 UTC = 15:30 IST
+	const nowMs = Date.now();
+	const diffMs = expiryUtc - nowMs;
+	const MIN_DAYS = 1 / 1440; // 1 minute floor to keep TTE positive
+	return Math.max(MIN_DAYS, diffMs / (1000 * 60 * 60 * 24));
 }
 
 /**
