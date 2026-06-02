@@ -7,7 +7,10 @@ export interface OptionMarketData {
 	oi?: number;
 	close_price?: number;
 	bid_price?: number;
+	bid_qty?: number;
 	ask_price?: number;
+	ask_qty?: number;
+	prev_oi?: number;
 }
 
 export interface OptionGreeks {
@@ -16,6 +19,7 @@ export interface OptionGreeks {
 	theta?: number;
 	vega?: number;
 	iv?: number;
+	pop?: number;
 }
 
 export interface OptionDetail {
@@ -29,6 +33,7 @@ export interface OptionChainEntry {
 	strike_price: number;
 	underlying_key: string;
 	underlying_spot_price: number;
+	pcr?: number;
 	call_options?: OptionDetail;
 	put_options?: OptionDetail;
 }
@@ -40,15 +45,17 @@ export interface OptionChainResponse {
 
 export interface RawChangeOIEntry {
 	strike_price: number;
-	call_oi?: number;
 	call_change_oi?: number;
-	put_oi?: number;
 	put_change_oi?: number;
 }
 
 // Actual shape returned by Upstox /v2/market/change-oi
 export interface ChangeOIData {
 	call_put_oi_data_list: RawChangeOIEntry[];
+	total_call_change_oi?: number;
+	total_put_change_oi?: number;
+	spot_closing_price?: number;
+	expiry?: string;
 }
 
 export type RawCandleArray = [
