@@ -321,12 +321,14 @@ server.registerTool(
 
 				const targetPoint = nearest(targetSpot);
 				const stopPoint = nearest(stopSpot);
-				const entryPremium = strikeSelection.ltp;
+				// Use BS price at current spot as R:R baseline so entry/target/stop
+				// are all from the same model. Market LTP stays in baseSignal.entry.
+				const bsEntryPrice = getPrice(nearest(spotPrice));
 				const targetPremium = getPrice(targetPoint);
 				const stopPremium = getPrice(stopPoint);
 
-				const gain = targetPremium - entryPremium;
-				const loss = entryPremium - stopPremium;
+				const gain = targetPremium - bsEntryPrice;
+				const loss = bsEntryPrice - stopPremium;
 				const ratio = loss > 0 ? Number((gain / loss).toFixed(2)) : 0;
 				const belowMinimum = ratio < SIGNAL_CONFIG.riskReward.minimumRatio;
 

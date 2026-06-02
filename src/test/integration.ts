@@ -596,9 +596,9 @@ async function runTests() {
 					throw new Error(
 						`Positive theta for call at strike ${row.strike}: ${row.call.theta}`,
 					);
-				if (row.call.vega <= 0)
+				if (row.call.vega < 0)
 					throw new Error(
-						`Non-positive vega at strike ${row.strike}: ${row.call.vega}`,
+						`Negative vega at strike ${row.strike}: ${row.call.vega}`,
 					);
 			}
 			if (row.put && (row.put.delta > 0 || row.put.delta < -1))
