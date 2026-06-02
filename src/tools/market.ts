@@ -35,6 +35,17 @@ const FO_SYMBOL_BY_INSTRUMENT: Record<string, string> = {
 	"NSE_INDEX|NIFTY Next 50": "NIFTYNXT50",
 };
 
+// Search queries that return CE/PE option instruments (not just FUT) for expiry discovery.
+// "NIFTY" returns only FUT (monthly); "Nifty 50" returns PE/CE including weekly expiries.
+// BANKNIFTY/FINNIFTY/MIDCPNIFTY have no weekly expiries — FO symbol search is sufficient.
+const EXPIRY_SEARCH_BY_INSTRUMENT: Record<string, string> = {
+	"NSE_INDEX|Nifty 50": "Nifty 50",
+	"NSE_INDEX|Nifty Bank": "BANKNIFTY",
+	"NSE_INDEX|Nifty Financial Services": "FINNIFTY",
+	"NSE_INDEX|NIFTY MID SELECT": "MIDCPNIFTY",
+	"NSE_INDEX|NIFTY Next 50": "NIFTYNXT50",
+};
+
 // --------------------------------------------------------------------------
 // Tool: search_underlying
 // --------------------------------------------------------------------------
@@ -93,7 +104,7 @@ server.registerTool(
 	async (args) => {
 		try {
 			const searchQuery =
-				FO_SYMBOL_BY_INSTRUMENT[args.instrument_key] ??
+				EXPIRY_SEARCH_BY_INSTRUMENT[args.instrument_key] ??
 				(args.instrument_key.includes("|")
 					? args.instrument_key.split("|")[1]
 					: args.instrument_key);
