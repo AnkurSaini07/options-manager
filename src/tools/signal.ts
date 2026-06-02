@@ -306,9 +306,11 @@ server.registerTool(
 				const getPrice = (pt: (typeof scenarioTable)[0]) =>
 					isCall ? pt.callPrice : pt.putPrice;
 
-				// Find scenario points nearest to target and stop spot levels
-				const targetSpot = spotPrice * (1 + cfg.targetShiftPct / 100);
-				const stopSpot = spotPrice * (1 + cfg.stopShiftPct / 100); // stopShiftPct is negative
+				// For calls: target = spot up, stop = spot down.
+				// For puts: target = spot down, stop = spot up — flip the signs.
+				const dirMult = isCall ? 1 : -1;
+				const targetSpot = spotPrice * (1 + (dirMult * cfg.targetShiftPct) / 100);
+				const stopSpot = spotPrice * (1 + (dirMult * cfg.stopShiftPct) / 100);
 
 				const nearest = (targetS: number) =>
 					scenarioTable.reduce((best, pt) =>
